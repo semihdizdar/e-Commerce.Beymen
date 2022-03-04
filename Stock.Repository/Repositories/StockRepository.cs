@@ -20,19 +20,26 @@ namespace Stock.Repository.Repositories
             _dbSet = _context.Set<StockInfo>();
         }
 
-        public async Task<StockInfo> GetAllByVariantCodeAsync(int variantId,int productId)
+        public async Task<StockInfo> GetAllByVariantCodeAsync(int variantId, int productId)
         {
-            return await _context.Stock.Where(x => x.VariantId == variantId && x.ProductId == productId).FirstOrDefaultAsync();
+            return await _context.Stock.Where(x => x.VariantId == variantId && x.ProductId == productId).GroupBy(x => new { x.VariantId, x.ProductId }).Select(x => new StockInfo
+            {
+                Quantity = x.Sum(y => y.Quantity),
+                VariantId = x.Key.VariantId,
+                ProductId = x.Key.ProductId,
+                CreatedDate = x.OrderBy(y=>y.CreatedDate).Select(z => z.CreatedDate).FirstOrDefault(),
+                UpdatedDate = x.Min(y => y.CreatedDate)
+            }).FirstOrDefaultAsync();
         }
 
         public async Task<List<StockInfo>> GetQuantityByVariantId(int productId)
         {
             List<StockInfo> result = new List<StockInfo>();
 
-            return await _context.Stock.Where(x=>x.ProductId == productId).ToListAsync();
+            return await _context.Stock.Where(x => x.ProductId == productId).ToListAsync();
         }
 
-        
+
     }
 }
 
